@@ -1,34 +1,26 @@
-node{
-    def imgVersion = UUID.randomUUID().toString()
-    def dockerImage = "kammana/nodeapp-6pm:${imgVersion}"
-    stage('Source Checkout'){
-        
-        git 'https://github.com/javahometech/node-app'
+node {
+  
+  checkout scm
+  def imgVersion = UUID.randomUUID().toString()
+  def dockerImage = "mukulxinaam/rewardpartner-stage-backend:${imgVersion}"
+  def Namespace = "default"
+  def PushToregistry = false
+
+  if (params.PushToregistry == 'No'){
+    stage('Build image') {
+     sh "docker build -t ${dockerImage} ."
     }
-    
-    
-    stage('Build Docker Image'){
-        sh "docker build -t ${dockerImage} ."
+  }
+ if (params.PushToregistry == 'Yes'){
+    stage('Build image') {
+      sh "docker build -t ${dockerImage} ."
     }
-    
-    stage('Push DockerHub'){
-		withCredentials([string(credentialsId: 'docker-hub', variable: 'dockerhubPwd')]) {
-			sh "docker login -u kammana -p ${dockerhubPwd}"
-		}
-        
-        sh "docker push ${dockerImage}"
+    stage('Push image') {
+
+        withCredentials([string(credentialsId: 'dockerhub-mukul', variable: 'dockerhubPwd')]) {
+            sh "docker login -u mukulxinaam -p ${dockerhubPwd}"
+        }
+            sh "docker push ${dockerImage}"
     }
-    
-	stage('Dev Deploy'){
-		def dockerRun = "docker run -d -p 8080:8080 --name nodeapp ${dockerImage}"
-		sshagent(['dev-docker']) {
-		    try{
-				sh "ssh -o StrictHostKeyChecking=no ec2-user@13.127.166.0 docker rm -f nodeapp "
-			}catch(e){
-			
-			
-			}
-			sh "ssh  ec2-user@13.127.166.0 ${dockerRun}"
-		}
-	}
+  }
 }
